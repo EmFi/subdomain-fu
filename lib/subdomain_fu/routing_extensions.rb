@@ -3,6 +3,22 @@
 # This is not yet a working part of SubdomainFu.
 
 module SubdomainFu
+  module RouteBuilder
+    def self.included(base)
+      base.alias_method_chain :divide_route_options, :subdomain
+    end
+
+    def divide_route_options_with_subdomain(segments, options)
+      new_options = {}
+      if options.is_a?(Hash) && options[:conditions] && options[:conditions].has_key?(:subdomain)
+        new_options = options.reverse_merge( :subdomain => options[:conditions][:subdomain])
+      else
+        new_options = options
+      end
+      divide_route_options_without_subdomain(segments, new_options)
+    end
+  end
+
   module RouteExtensions
     def self.included(base)
       base.alias_method_chain :recognition_conditions, :subdomain
@@ -53,6 +69,7 @@ end
 ActionController::Routing::RouteSet::Mapper.send :include, SubdomainFu::MapperExtensions
 ActionController::Routing::RouteSet.send :include, SubdomainFu::RouteSetExtensions
 ActionController::Routing::Route.send :include, SubdomainFu::RouteExtensions
+ActionController::Routing::RouteBuilder.send :include, SubdomainFu::RouteBuilder
 
 # UrlRewriter::RESERVED_OPTIONS is only available in Rails >= 2.2
 # http://www.portallabs.com/blog/2008/12/02/fixing-subdomain_fu-with-named-routes-rails-22/
